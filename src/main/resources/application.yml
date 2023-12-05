@@ -1,0 +1,29 @@
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /static/h2-console
+  devtools:
+    restart:
+      enabled: true
+
+mybatis:
+  type-aliases-package: com.example.demo.ts.vo
+  mapper-locations: mapper/*.xml
+
+logging:
+  level:
+    root: debug
+    org:
+      springframework:
+        boot:
+          autoconfigure: ERROR
+    com:
+      zaxxer:
+        hikari: ERROR
