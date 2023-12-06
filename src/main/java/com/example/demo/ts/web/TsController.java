@@ -9,6 +9,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.Filter;
 import java.util.List;
 
 @RestController
@@ -17,15 +18,20 @@ public class TsController {
     @Autowired
     private TsService tsService;
 
-//    @Autowired
-//   // @Qualifier("springSecurityFilterChain")
-//    private FilterChainProxy filterChainProxy;
+    @Autowired
+    @Qualifier("springSecurityFilterChain")
+    private Filter springSecurityFilterChain;
+
 
     @GetMapping("/chk")
-    public String apiPermitAll() {
-
-//        filterChainProxy.getFilterChains().forEach(System.out::println);
-//        securityFilterChain.getFilters().forEach(System.out::println);
+    public String apiChk() {
+        System.out.println("*********************************************************");
+        FilterChainProxy filterChainProxy = (FilterChainProxy) springSecurityFilterChain;
+        List<SecurityFilterChain> list = filterChainProxy.getFilterChains();
+        list.stream()
+                .flatMap(chain -> chain.getFilters().stream())
+                .forEach(filter -> System.out.println(filter.getClass()));
+        System.out.println("*********************************************************");
        return "chk - ok";
     }
 
