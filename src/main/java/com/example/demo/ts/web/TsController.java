@@ -40,14 +40,16 @@ public class TsController {
         return "manage - ok";
     }
 
-    @GetMapping("/error")
-    public String error(String msg) {
-        return msg;
+    @GetMapping("/forbidden")
+    public String forbidden() {
+        return "forbidden";
     }
 
     @GetMapping("/test")
     public String test() throws Exception {
         return tsService.selectUser("amigo").toString();
     }
+
+
 
 }

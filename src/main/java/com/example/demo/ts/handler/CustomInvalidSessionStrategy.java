@@ -22,16 +22,8 @@ public class CustomInvalidSessionStrategy implements InvalidSessionStrategy {
         if (request.getHeader("X-AjaxRequest") != null && "1".equals(request.getHeader("X-AjaxRequest"))) {
             response.sendError(601, "This session has been expired");
         } else {
-
             String contextPath = request.getContextPath();
-            String requestURL = request.getRequestURI();
-            String loginUrl = null;
-
-            if (requestURL.contains("/mob")) {
-                loginUrl = "/mob/cmm/login/selectLoginMain.do";
-            }else{
-                loginUrl = expiredUrl;
-            }
+            String loginUrl = expiredUrl;
 
             response.setContentType("text/html;charset=UTF-8");
 

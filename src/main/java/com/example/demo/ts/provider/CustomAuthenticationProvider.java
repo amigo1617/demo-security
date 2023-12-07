@@ -23,7 +23,7 @@ public class CustomAuthenticationProvider extends AbstractUserDetailsAuthenticat
     @Override
     protected void additionalAuthenticationChecks(UserDetails userDetails, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
         // 기타 처리 ..
-        System.out.println(" additionalAuthenticationChecks : " + userDetails.getAuthorities());
+        System.out.println(" additionalAuthenticationChecks : " + userDetails.getAuthorities() + " : " + authentication.getPrincipal().toString());
     }
 
     @Override

@@ -12,7 +12,10 @@ spring:
   devtools:
     restart:
       enabled: true
-
+  mvc:
+    view:
+      prefix: /WEB-INF/views/
+      suffix: .jsp
 mybatis:
   type-aliases-package: com.example.demo.ts.vo
   mapper-locations: mapper/*.xml
@@ -27,3 +30,8 @@ logging:
     com:
       zaxxer:
         hikari: ERROR
+
+server:
+  servlet:
+    session:
+      timeout: 10m

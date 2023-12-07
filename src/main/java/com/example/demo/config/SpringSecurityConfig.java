@@ -2,9 +2,11 @@ package com.example.demo.config;
 
 import com.example.demo.ts.handler.*;
 import com.example.demo.ts.provider.CustomAuthenticationProvider;
+import com.example.demo.ts.resistry.CustomSessionRegistryImpl;
 import com.example.demo.ts.service.CustomUserDetailService;
 import com.example.demo.ts.voter.UrlAccessDecisionVoter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,11 +22,19 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.session.SessionInformationExpiredEvent;
 import org.springframework.security.web.session.SessionInformationExpiredStrategy;
 import org.springframework.web.client.RestTemplate;
@@ -42,27 +52,37 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                    .authorizeRequests()
-                    .antMatchers("/test", "/error", "/api/**").permitAll() // relate WebExpressionVoter
-                    .anyRequest().denyAll() // due to AnonymousAuthenticationToken
-                    .accessDecisionManager(this.accessDecisionManager())
-            .and()
-                    .formLogin()
-                    .successHandler(new CustomAuthenticationSuccessHandler())
-                    .failureHandler(new CustomAuthenticationFailureHandler())
-            .and()
-                .exceptionHandling()
-                .accessDeniedHandler(customAccessDeniedHandler())
-                //.accessDeniedPage()
-//                .authenticationEntryPoint(customAuthenticationEntryPoint())
-//            .and()
-//                    .sessionManagement()
-//                    .invalidSessionStrategy(new CustomInvalidSessionStrategy(""))
-//                    .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::migrateSession)
+                .authorizeRequests()
+                .antMatchers("/test", "/error", "/forbidden", "/api/**").permitAll() // relate WebExpressionVoter
+                .anyRequest().denyAll() // due to AnonymousAuthenticationToken
+                .accessDecisionManager(this.accessDecisionManager())
 
             .and()
-                    .csrf().disable();
-                    //.httpBasic(); // http header - Authorization: Basic bzFbdGfmZrptWY30YQ==  필요하다면 세팅
+                .csrf().disable()
+                .formLogin()
+                .loginPage("/login").permitAll()
+                .loginProcessingUrl("/loginProc")
+                .successHandler(customAuthenticationSuccessHandler())
+                .failureHandler(customAuthenticationFailureHandler())
+
+            .and()
+                .logout()
+                .logoutUrl("/logout").permitAll()
+                //.addLogoutHandler(new LogoutHandler())  세션초기화 외에 해야할 루틴이 있다면
+                .logoutSuccessHandler(customLogoutSuccessHandler())
+
+            .and()
+                .exceptionHandling()
+                .authenticationEntryPoint(customAuthenticationEntryPoint())
+                .accessDeniedHandler(customAccessDeniedHandler())
+
+            .and()
+                .sessionManagement()
+                .invalidSessionUrl("/login")
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+                .sessionRegistry(new CustomSessionRegistryImpl())
+                .expiredUrl("/login");
     }
 
     @Override
@@ -72,8 +92,28 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/favicon.ico", "/static/h2-console", "/static/js/**", "/static/css/**");
-        //web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
+//        web.ignoring().antMatchers("/favicon.ico", "/static/h2-console", "/static/js/**", "/static/css/**");
+        web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
+    }
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
+    public LogoutSuccessHandler customLogoutSuccessHandler() {
+        return new CustomLogoutSuccessHandler();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler customAuthenticationSuccessHandler() {
+        return new CustomAuthenticationSuccessHandler();
+    }
+
+    @Bean
+    public AuthenticationFailureHandler customAuthenticationFailureHandler() {
+        return new CustomAuthenticationFailureHandler();
     }
 
     @Bean

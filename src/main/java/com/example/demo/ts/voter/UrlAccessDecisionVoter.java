@@ -4,6 +4,8 @@ import com.example.demo.ts.service.TsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.FilterInvocation;
@@ -16,17 +18,17 @@ public class UrlAccessDecisionVoter implements AccessDecisionVoter<FilterInvocat
     @Autowired
     private TsService tsService;
 
-    @Override
-    public boolean supports(ConfigAttribute attribute) {
-        return true;
-    }
+    private AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
+
 
     @Override
     public int vote(Authentication authentication, FilterInvocation filterInvocation, Collection<ConfigAttribute> attributes) {
-        if (! (authentication.getPrincipal() instanceof UserDetails)) {
+        if (authenticationTrustResolver.isAnonymous(authentication)) {
             System.out.println(String.format("UrlAccessDecisionVoter : anonymous - user    uri : %s ", filterInvocation.getRequestUrl()));
+            System.out.println("need login ");
             return ACCESS_DENIED;
         }
+
         Map<String,String> user = null;
         try {
             user = tsService.selectUser(authentication.getName());
@@ -40,6 +42,11 @@ public class UrlAccessDecisionVoter implements AccessDecisionVoter<FilterInvocat
         }
         System.out.println(String.format("UrlAccessDecisionVoter ACCESS_GRANTED : %s : uri : %s ", user.get("USERNAME"), filterInvocation.getRequestUrl()));
         return ACCESS_GRANTED;
+    }
+
+    @Override
+    public boolean supports(ConfigAttribute attribute) {
+        return true;
     }
 
     @Override
