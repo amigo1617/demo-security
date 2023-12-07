@@ -40,9 +40,9 @@ public class TsController {
         return "manage - ok";
     }
 
-    @GetMapping("/suss")
-    public String loginSuss() {
-        return "suss - ok";
+    @GetMapping("/error")
+    public String error(String msg) {
+        return msg;
     }
 
     @GetMapping("/test")

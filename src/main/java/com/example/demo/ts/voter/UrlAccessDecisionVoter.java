@@ -38,7 +38,7 @@ public class UrlAccessDecisionVoter implements AccessDecisionVoter<FilterInvocat
             System.out.println(String.format("UrlAccessDecisionVoter :  prohibited!!   uri : %s ", filterInvocation.getRequestUrl()));
             return ACCESS_DENIED;
         }
-        System.out.println(String.format("UrlAccessDecisionVoter : %s : uri : %s ", user.get("USERNAME"), filterInvocation.getRequestUrl()));
+        System.out.println(String.format("UrlAccessDecisionVoter ACCESS_GRANTED : %s : uri : %s ", user.get("USERNAME"), filterInvocation.getRequestUrl()));
         return ACCESS_GRANTED;
     }
 

@@ -1,7 +1,6 @@
 package com.example.demo.config;
 
-import com.example.demo.ts.handler.CustomAuthenticationFailureHandler;
-import com.example.demo.ts.handler.CustomAuthenticationSuccessHandler;
+import com.example.demo.ts.handler.*;
 import com.example.demo.ts.provider.CustomAuthenticationProvider;
 import com.example.demo.ts.service.CustomUserDetailService;
 import com.example.demo.ts.voter.UrlAccessDecisionVoter;
@@ -20,11 +19,18 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.FilterInvocation;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
+import org.springframework.security.web.session.SessionInformationExpiredEvent;
+import org.springframework.security.web.session.SessionInformationExpiredStrategy;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.ServletException;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 
@@ -37,21 +43,23 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                     .authorizeRequests()
-                    .antMatchers("/test", "/api/**").permitAll() // relate WebExpressionVoter
+                    .antMatchers("/test", "/error", "/api/**").permitAll() // relate WebExpressionVoter
                     .anyRequest().denyAll() // due to AnonymousAuthenticationToken
                     .accessDecisionManager(this.accessDecisionManager())
-            .and()
-                    .exceptionHandling()
-                    .accessDeniedHandler((request, response, accessDeniedException) -> {
-                        System.out.println(" $$$$$$$$$  SpringSecurityConfig  -  Access Denied ");
-                        response.sendRedirect("/test");
-                    })
-                    //.accessDeniedPage()
-                    //.authenticationEntryPoint()
             .and()
                     .formLogin()
                     .successHandler(new CustomAuthenticationSuccessHandler())
                     .failureHandler(new CustomAuthenticationFailureHandler())
+            .and()
+                .exceptionHandling()
+                .accessDeniedHandler(customAccessDeniedHandler())
+                //.accessDeniedPage()
+//                .authenticationEntryPoint(customAuthenticationEntryPoint())
+//            .and()
+//                    .sessionManagement()
+//                    .invalidSessionStrategy(new CustomInvalidSessionStrategy(""))
+//                    .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::migrateSession)
+
             .and()
                     .csrf().disable();
                     //.httpBasic(); // http header - Authorization: Basic bzFbdGfmZrptWY30YQ==  필요하다면 세팅
@@ -66,6 +74,16 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) throws Exception {
         web.ignoring().antMatchers("/favicon.ico", "/static/h2-console", "/static/js/**", "/static/css/**");
         //web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
+    }
+
+    @Bean
+    public AccessDeniedHandler customAccessDeniedHandler() {
+        return new CustomAccessDeniedHandler();
+    }
+
+    @Bean
+    public AuthenticationEntryPoint customAuthenticationEntryPoint() {
+        return new CustomAuthenticationEntryPoint();
     }
 
     @Bean
