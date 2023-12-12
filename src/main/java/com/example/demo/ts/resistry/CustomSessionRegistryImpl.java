@@ -20,7 +20,9 @@ import org.springframework.security.core.session.*;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.Assert;
 
-
+/**
+ * @see SessionRegistryImpl
+ */
 public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationListener<AbstractSessionEvent> {
 
     protected final Log logger = LogFactory.getLog(org.springframework.security.core.session.SessionRegistryImpl.class);
@@ -49,7 +51,7 @@ public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationLi
 
     @Override
     public List<SessionInformation> getAllSessions(Object principal, boolean includeExpiredSessions) {
-        Set<String> sessionsUsedByPrincipal = this.principals.get(((UserDetails)principal).getUsername());
+        Set<String> sessionsUsedByPrincipal = this.principals.get(((UserDetails)principal).getUsername()); // <-- change
         if (sessionsUsedByPrincipal == null) {
             return Collections.emptyList();
         }
@@ -110,7 +112,7 @@ public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationLi
             this.logger.debug(LogMessage.format("Registering session %s, for principal %s", sessionId, principal));
         }
         this.sessionIds.put(sessionId, new SessionInformation(principal, sessionId, new Date()));
-        this.principals.compute(((UserDetails)principal).getUsername(), (key, sessionsUsedByPrincipal) -> {
+        this.principals.compute(((UserDetails)principal).getUsername(), (key, sessionsUsedByPrincipal) -> { // <-- change
             if (sessionsUsedByPrincipal == null) {
                 sessionsUsedByPrincipal = new CopyOnWriteArraySet<>();
             }
@@ -131,7 +133,7 @@ public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationLi
             this.logger.debug("Removing session " + sessionId + " from set of registered sessions");
         }
         this.sessionIds.remove(sessionId);
-        this.principals.computeIfPresent(((UserDetails) info.getPrincipal()).getUsername() , (key, sessionsUsedByPrincipal) -> {
+        this.principals.computeIfPresent(((UserDetails) info.getPrincipal()).getUsername() , (key, sessionsUsedByPrincipal) -> { // <-- change
             this.logger.debug(
                     LogMessage.format("Removing session %s from principal's set of registered sessions", sessionId));
             sessionsUsedByPrincipal.remove(sessionId);
