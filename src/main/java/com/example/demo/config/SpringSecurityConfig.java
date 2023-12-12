@@ -54,7 +54,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                 .antMatchers("/test", "/error", "/forbidden", "/api/**").permitAll() // relate WebExpressionVoter
-                .anyRequest().denyAll() // due to AnonymousAuthenticationToken
+                .anyRequest().denyAll() // 위 permitall 만 WebExpressionVoter 이용, 나머지는 UrlAccessDecisionVoter 에서 인가 (쿼리해서 등등..)
                 .accessDecisionManager(this.accessDecisionManager())
 
             .and()
