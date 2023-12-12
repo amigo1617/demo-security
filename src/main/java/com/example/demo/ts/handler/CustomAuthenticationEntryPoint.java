@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+// call when .. 모든 voter가 ACCESS_DENIED 던지고 로그인을 하지 않아 AuthenticationToken 이 AnonymousAuthenticationToken 인 경우
+//(Authentication -> AnonymousAuthenticationToken [Principal=anonymousUser, Credentials=[PROTECTED], Authenticated=true, Details=..., Granted Authorities=[ROLE_ANONYMOUS]])
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Autowired
