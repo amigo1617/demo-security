@@ -1,0 +1,59 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dev-oper-configmap
+data:
+  SPRING_PROFILES_ACTIVE: "dev, no-was, ucm-vuc-oper"
+  SYS: "dev"
+  SERVER_PORT: "8080"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prod-oper-configmap
+data:
+  SPRING_PROFILES_ACTIVE: "prod, no-was, ucm-vuc-oper"
+  SYS: "prod"
+  SERVER_PORT: "8080"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dev-pfom-configmap
+data:
+  SPRING_PROFILES_ACTIVE: "dev, no-was, ucm-odr-pfom"
+  SYS: "dev"
+  SERVER_PORT: "8080"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prod-pfom-configmap
+data:
+  SPRING_PROFILES_ACTIVE: "prod, no-was, ucm-odr-pfom"
+  SYS: "prod"
+  SERVER_PORT: "8080"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dev-serv-configmap
+data:
+  SPRING_PROFILES_ACTIVE: "dev, no-was, ucm-api-serv"
+  SYS: "dev"
+  SERVER_PORT: "8080"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prod-serv-configmap
+data:
+  SPRING_PROFILES_ACTIVE: "prod, no-was, ucm-api-serv"
+  SYS: "prod"
+  SERVER_PORT: "8080"

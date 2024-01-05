@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ucm-vuc-oper
+  labels:
+    app: ucm-vuc-oper
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: ucm-vuc-oper
+      labels:
+        app: ucm-vuc-oper
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: ucm-vuc-oper-container
+          image: amigo1617/test-ucm:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: dev-oper-configmap
+      restartPolicy: Always
+      dnsPolicy: Default
+  selector:
+    matchLabels:
+      app: ucm-vuc-oper
