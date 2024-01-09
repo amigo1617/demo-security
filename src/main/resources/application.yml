@@ -53,5 +53,5 @@ cloud:
     region:
       static: gov-standard
     credentials:
-      access-key: 601D8D4DEE4344D8AE04
-      secret-key: B5BEE68094CE7B179A03B0763E9CA464D55922D3
+      access-key: 7313AC173F4C1C67592D
+      secret-key: 762029C670EA64234969D2360EE56B53D32B7430
