@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ucm-vuc-oper-svc
+  namespace: was
+  labels:
+    app: ucm-vuc-oper
+spec:
+  type: NodePort
+  #externalTrafficPolicy: Local
+  selector:
+    app: ucm-vuc-oper
+  ports:
+    - port: 8080
+      name: http
+      targetPort: 8080
+      nodePort: 31003
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: ucm-vuc-oper
+    version: "1"
+  name: ucm-vuc-oper
+  namespace: was
+spec:
+  replicas: 2
+  serviceName: ucm-vuc-oper-svc
+  selector:
+    matchLabels:
+      app: ucm-vuc-oper
+  template:
+    metadata:
+      labels:
+        app: ucm-vuc-oper
+    spec:
+      imagePullSecrets:
+        - name: dev-reg-secret
+      containers:
+        - image: pqf1vv9m.private-ncr.gov-ntruss.com/${IMAGE_NAME}:latest
+          imagePullPolicy: Always
+          name: ucm-vuc-oper
+          resources:
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          securityContext:
+            runAsUser: 1000
+          env:
+            - name: JVM_OPTS
+              value: "-Xms512m -Xmx1024m -XX:MaxMetaspaceSize=256m -Dsys=dev -Dsvc.log=GYEONGGI -Dapp.name=ucm-vuc-oper -Dapp.id=ucm-vuc-oper"
+            - name: JNDI_NAME
+              value: "ucm-vuc-oper"
+          volumeMounts:
+            - name: data-dir
+              mountPath: /log
+          ports:
+            - containerPort: 8080
+          command: ["/opt/wildfly-26/domains/was/jboot"]
+          livenessProbe:
+            exec:
+              command:
+                - ls -ld
+                - /log/was
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+        ### Log Side Car
+        - name: gc-log-sidecar
+          image: busybox:1.28
+          resources:
+          volumeMounts:
+            - name: data-dir
+              mountPath: /var/log
+          command: ["sh", "-c", "tail -f /var/log/was/gclog/GC_was.out"]
+        - name: was-log-sidecar
+          image: busybox:1.28
+          resources:
+          env:
+            - name: WAS_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app']
+          volumeMounts:
+            - name: data-dir
+              mountPath: /var/log
+          command:
+            ["sh", "-c", "tail -f /var/log/was/${WAS_NAME}/${WAS_NAME}.log"]
+        ### Init Container
+      initContainers:
+        - name: log-dir-change
+          image: busybox:1.28
+          resources:
+          volumeMounts:
+            - name: data-dir
+              mountPath: /var/log
+          command:
+            [
+              "sh",
+              "-c",
+              "mkdir -p /var/log/was/gclog && chown -R 1000:1000 /var/log",
+            ]
+  volumeClaimTemplates:
+    - metadata:
+        name: data-dir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: nks-block-storage
+
+---
