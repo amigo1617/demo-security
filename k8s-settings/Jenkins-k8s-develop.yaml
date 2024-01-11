@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    agent: jenkins-agent
+    agent: jenkins-agent-develop
 spec:
   securityContext:
     runAsUser: 0
@@ -21,10 +21,21 @@ spec:
       resources:
         limits:
           memory: 2Gi
-          cpu: 500m
+          cpu: 1000m
       volumeMounts:
         - name: volume-mvn
           mountPath: /root/.m2/repository
+    - name: kaniko-warmer
+      image: pqf1vv9m.private-ncr.gov-ntruss.com/custom-kaniko-warmer:1.0
+      command:
+        - sleep
+      args:
+        - 99m
+      volumeMounts:
+        - name: jenkins-pcr
+          mountPath: /kaniko/.docker
+        - name: volume-kaniko
+          mountPath: /cache
     - name: kaniko-c0
       image: gcr.io/kaniko-project/executor:debug
       imagePullPolicy: IfNotPresent
@@ -62,23 +73,12 @@ spec:
         - name: volume-kaniko
           mountPath: /cache
     - name: kubectl
-      image: bitnami/kubectl:1.29.0
+      image: bitnami/kubectl:1.26.10
       imagePullPolicy: IfNotPresent
       command:
         - sleep
       args:
         - 99m
-    - name: kaniko-warmer
-      image: pqf1vv9m.private-ncr.gov-ntruss.com/custom-kaniko-warmer:1.0
-      command:
-        - sleep
-      args:
-        - 99m
-      volumeMounts:
-        - name: jenkins-pcr
-          mountPath: /kaniko/.docker
-        - name: volume-kaniko
-          mountPath: /cache
   volumes:
     - name: volume-mvn
       persistentVolumeClaim:

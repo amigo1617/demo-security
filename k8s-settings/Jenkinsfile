@@ -1,20 +1,21 @@
 def serv = 'ucm-api-serv'
 def pfom = 'ucm-odr-pfom'
 def oper = 'ucm-vuc-oper'
-def registry = 'pqf1vv9m.private-ncr.gov-ntruss.com'
+def pcrEndPoint = 'pqf1vv9m.private-ncr.gov-ntruss.com'
+def agentYaml = env.BRANCH_NAME == 'main' ? 'Jenkins-k8s-main.yaml' : 'Jenkins-k8s-develop.yaml'
+def baseImageName = env.BRANCH_NAME == 'main' ? 'prd-was-base' : 'dev-was-base'
 def activeModuleArray = []
 def activeModules
 def ciRefTag
-def targetNs
-def targetProfile
+
 
 pipeline {
 
     agent {
-        kubernetes {
-            defaultContainer 'jnlp'
-            yamlFile 'jenkins-kube.yaml'
-        }
+         kubernetes {
+              defaultContainer 'jnlp'
+              yamlFile "${agentYaml}"
+         }
     }
 
     options {
@@ -39,38 +40,19 @@ pipeline {
                 name: 'OPER'
         )
     }
-    stages {
 
-        stage('prepare') {
-            steps {
-                checkout scm
-                script {
-                    if (params.SERV) activeModuleArray.add(serv)
-                    if (params.PFOM) activeModuleArray.add(pfom)
-                    if (params.OPER) activeModuleArray.add(oper)
-                    activeModules = activeModuleArray.join(",")
-                    ciRefTag = env.BRANCH_NAME + "-" + sh(script: "printf \$(git rev-parse --short HEAD)", returnStdout: true)
-                    switch (env.BRANCH_NAME) {
-                        case 'develop':
-                            targetProfile = 'dev'
-                            targetNs = '??'
-                            break
-                        case 'main':
-                            targetProfile = 'prod'
-                            targetNs = '??'
-                            break
-                        default:
-//                         error 'not applicable branch. process abort'
-                            break
-                    }
-                }
-            }
-        }
+    stages {
 
         stage('validate params') {
             steps {
                 script {
+                    checkout scm
+                    if (params.SERV) activeModuleArray.add(serv)
+                    if (params.PFOM) activeModuleArray.add(pfom)
+                    if (params.OPER) activeModuleArray.add(oper)
+                    activeModules = activeModuleArray.join(",")
                     if (activeModules.size() == 0) 'error no bulid parameters. choose at least 1 build parameter. process abort'
+                    ciRefTag = env.BRANCH_NAME + "-" + sh(script: "printf \$(git rev-parse --short HEAD)", returnStdout: true)
                 }
             }
         }
@@ -81,7 +63,7 @@ pipeline {
                     sh """
                         /kaniko/warmer \
                         --cache-dir=/cache \
-                        --image=tomcat:9.0.83-jdk11-temurin-focal \
+                        --image=${pcrEndPoint}/dev-was-base:latest \
                         """
                 }
             }
@@ -95,70 +77,80 @@ pipeline {
             }
         }
 
-        stage('package') {
+        stage('[image]') {
             parallel {
-                stage('_serv') {
+                stage('serv') {
                     when {
                         expression { params.SERV }
                     }
                     steps {
                         container('kaniko-c0') {
-                            sh """
-                                /kaniko/executor \
-                                -v debug \
-                                -f `pwd`/Dockerfile \
-                                -c `pwd` \
-                                --cache=true \
-                                --build-arg WAR_PATH="${serv}/target/${serv}" \
-                                -d "${registry}/${serv}:${ciRefTag}"
-                                """
+                            script {
+                                sh """
+                                    /kaniko/executor \
+                                    --dockerfile `pwd`/Dockerfile \
+                                    --context `pwd` \
+                                    --cache=true \
+                                    --build-arg WAR_PATH="${serv}/target/${serv}" \
+                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseImageName}:latest" \
+                                    --destination "${pcrEndPoint}/${serv}:${ciRefTag}" \
+                                    --destination "${pcrEndPoint}/${serv}:latest" 
+                                    """
+                            }
                         }
                     }
                 }
 
-                stage('_pfom') {
+                stage('pfom') {
                     when {
                         expression { params.PFOM }
                     }
                     steps {
                         container('kaniko-c1') {
-                            sh """
-                                /kaniko/executor \
-                                -v debug \
-                                -f `pwd`/Dockerfile \
-                                -c `pwd` \
-                                --cache=true \
-                                --build-arg WAR_PATH="${pfom}/target/${pfom}" \
-                                -d "${registry}/${pfom}:${ciRefTag}"
-                                """
+                            script {
+                                sh """
+                                    /kaniko/executor \
+                                    --dockerfile `pwd`/Dockerfile \
+                                    --context `pwd` \
+                                    --cache=true \
+                                    --build-arg WAR_PATH="${pfom}/target/${pfom}" \
+                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseImageName}:latest" \
+                                    --destination "${pcrEndPoint}/${pfom}:${ciRefTag}" \
+                                    --destination "${pcrEndPoint}/${pfom}:latest" 
+                                    """
+                            }
                         }
                     }
                 }
 
-                stage('_oper') {
+                stage('oper') {
                     when {
                         expression { params.OPER }
                     }
                     steps {
                         container('kaniko-c2') {
-                            sh """
-                                /kaniko/executor \
-                                -v debug \
-                                -f `pwd`/Dockerfile \
-                                -c `pwd` \
-                                --cache=true \
-                                --build-arg WAR_PATH="${oper}/target/${oper}" \
-                                -d "${registry}/${oper}:${ciRefTag}"
-                                """
+                            script {
+                                sh """
+                                    /kaniko/executor \
+                                    --verbosity debug \
+                                    --dockerfile `pwd`/Dockerfile \
+                                    --context `pwd` \
+                                    --cache=true \
+                                    --build-arg WAR_PATH="${oper}/target/${oper}" \
+                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseImageName}:latest" \
+                                    --destination "${pcrEndPoint}/${oper}:${ciRefTag}" \
+                                    --destination "${pcrEndPoint}/${oper}:latest" 
+                                    """
+                            }
                         }
                     }
                 }
             }
         }
 
-        stage('deploy') {
+        stage('[deploy]') {
             parallel {
-                stage('_serv') {
+                stage('serv') {
                     when {
                         expression { params.SERV }
                     }
@@ -169,7 +161,7 @@ pipeline {
                     }
                 }
 
-                stage('_pfom') {
+                stage('pfom') {
                     when {
                         expression { params.PFOM }
                     }
@@ -180,14 +172,22 @@ pipeline {
                     }
                 }
 
-                stage('_oper') {
+                stage('oper') {
                     when {
                         expression { params.OPER }
                     }
                     steps {
-                        container('kubectl') {
-//                             sh "kubectl set image deployment/ucm-vuc-oper ucm-vuc-oper-container=${pcr}/${oper}:${ciRefTag} -n ${targetNs} --record"
-                            echo " done "
+                        container('kubectl') {                             
+                            script {
+                                if (env.BRANCH_NAME == 'main') {
+                                    withKubeConfig([credentialsId: 'prod_cred']) {
+                                        //sh "kubectl set image StatefulSet/${oper} ${oper}=${pcr}/${oper}:${ciRefTag} -n ${targetNs} --record"
+                                    }
+                                } else {
+                                    echo " done "
+                                    //sh "kubectl set image StatefulSet/${oper} ${oper}=${pcr}/${oper}:${ciRefTag} -n was --record"
+                                }
+                            }
                         }
                     }
                 }
