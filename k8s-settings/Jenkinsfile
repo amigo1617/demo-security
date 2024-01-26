@@ -1,16 +1,16 @@
 def serv = 'ucm-api-serv'
 def pfom = 'ucm-odr-pfom'
 def oper = 'ucm-vuc-oper'
-def pcrEndPoint = 'pqf1vv9m.private-ncr.gov-ntruss.com'
+def web = 'ucm-web'
+def pcrEndPoint = env.BRANCH_NAME == 'main' ? 'avobxiry.private-ncr.gov-ntruss.com' : 'pqf1vv9m.private-ncr.gov-ntruss.com'
 def agentYaml = env.BRANCH_NAME == 'main' ? 'Jenkins-k8s-main.yaml' : 'Jenkins-k8s-develop.yaml'
-def baseImageName = env.BRANCH_NAME == 'main' ? 'prd-was-base' : 'dev-was-base'
+def baseWasImage = env.BRANCH_NAME == 'main' ? 'prd-was-base' : 'dev-was-base'
+def baseWebImage = env.BRANCH_NAME == 'main' ? 'prd-web-base' : 'dev-web-image'
 def activeModuleArray = []
 def activeModules
 def ciRefTag
 
-
 pipeline {
-
     agent {
          kubernetes {
               defaultContainer 'jnlp'
@@ -42,7 +42,6 @@ pipeline {
     }
 
     stages {
-
         stage('validate params') {
             steps {
                 script {
@@ -50,8 +49,8 @@ pipeline {
                     if (params.SERV) activeModuleArray.add(serv)
                     if (params.PFOM) activeModuleArray.add(pfom)
                     if (params.OPER) activeModuleArray.add(oper)
+                    if (activeModuleArray.isEmpty()) 'error no bulid parameters. choose at least 1 build parameter. process abort'
                     activeModules = activeModuleArray.join(",")
-                    if (activeModules.size() == 0) 'error no bulid parameters. choose at least 1 build parameter. process abort'
                     ciRefTag = env.BRANCH_NAME + "-" + sh(script: "printf \$(git rev-parse --short HEAD)", returnStdout: true)
                 }
             }
@@ -63,7 +62,8 @@ pipeline {
                     sh """
                         /kaniko/warmer \
                         --cache-dir=/cache \
-                        --image=${pcrEndPoint}/dev-was-base:latest \
+                        --image=${pcrEndPoint}/${baseWebImage}:latest \
+                        --image=${pcrEndPoint}/${baseWasImage}:latest \
                         """
                 }
             }
@@ -85,18 +85,17 @@ pipeline {
                     }
                     steps {
                         container('kaniko-c0') {
-                            script {
-                                sh """
-                                    /kaniko/executor \
-                                    --dockerfile `pwd`/Dockerfile \
-                                    --context `pwd` \
-                                    --cache=true \
-                                    --build-arg WAR_PATH="${serv}/target/${serv}" \
-                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseImageName}:latest" \
-                                    --destination "${pcrEndPoint}/${serv}:${ciRefTag}" \
-                                    --destination "${pcrEndPoint}/${serv}:latest" 
-                                    """
-                            }
+                            print "build ${serv} was image..."
+                            sh """
+                                /kaniko/executor \
+                                --dockerfile `pwd`/Dockerfile-was \
+                                --context `pwd` \
+                                --cache=true \
+                                --build-arg BASE_IMAGE="${pcrEndPoint}/${baseWasImage}:latest" \
+                                --build-arg COPY_TARGET="${serv}/target/${serv}.war" \
+                                --destination "${pcrEndPoint}/${serv}:${ciRefTag}" \
+                                --destination "${pcrEndPoint}/${serv}:latest"
+                                """
                         }
                     }
                 }
@@ -108,15 +107,28 @@ pipeline {
                     steps {
                         container('kaniko-c1') {
                             script {
-                                sh """
+                                if (! params.OPER) { // build per 1 image create for web
+                                    print "build web image..."
+                                    sh """
                                     /kaniko/executor \
-                                    --dockerfile `pwd`/Dockerfile \
+                                    --dockerfile `pwd`/Dockerfile-web \
                                     --context `pwd` \
                                     --cache=true \
-                                    --build-arg WAR_PATH="${pfom}/target/${pfom}" \
-                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseImageName}:latest" \
+                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseWebImage}:latest" \
+                                    --destination "${pcrEndPoint}/${web}:${ciRefTag}" \
+                                    --destination "${pcrEndPoint}/${web}:latest"
+                                    """
+                                }
+                                print "build ${pfom} was image..."
+                                sh """
+                                    /kaniko/executor \
+                                    --dockerfile `pwd`/Dockerfile-was \
+                                    --context `pwd` \
+                                    --cache=true \
+                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseWasImage}:latest" \
+                                    --build-arg COPY_TARGET="${pfom}/target/${pfom}.war" \
                                     --destination "${pcrEndPoint}/${pfom}:${ciRefTag}" \
-                                    --destination "${pcrEndPoint}/${pfom}:latest" 
+                                    --destination "${pcrEndPoint}/${pfom}:latest"
                                     """
                             }
                         }
@@ -129,19 +141,28 @@ pipeline {
                     }
                     steps {
                         container('kaniko-c2') {
-                            script {
-                                sh """
-                                    /kaniko/executor \
-                                    --verbosity debug \
-                                    --dockerfile `pwd`/Dockerfile \
-                                    --context `pwd` \
-                                    --cache=true \
-                                    --build-arg WAR_PATH="${oper}/target/${oper}" \
-                                    --build-arg BASE_IMAGE="${pcrEndPoint}/${baseImageName}:latest" \
-                                    --destination "${pcrEndPoint}/${oper}:${ciRefTag}" \
-                                    --destination "${pcrEndPoint}/${oper}:latest" 
-                                    """
-                            }
+                            print "build web image..."
+                            sh """
+                                /kaniko/executor \
+                                --dockerfile `pwd`/Dockerfile-web \
+                                --context `pwd` \
+                                --cache=true \
+                                --build-arg BASE_IMAGE="${pcrEndPoint}/${baseWebImage}:latest" \
+                                --destination "${pcrEndPoint}/${web}:${ciRefTag}" \
+                                --destination "${pcrEndPoint}/${web}:latest"
+                                """
+
+                            print "build ${oper} was image..."
+                            sh """
+                                /kaniko/executor \
+                                --dockerfile `pwd`/Dockerfile-was \
+                                --context `pwd` \
+                                --cache=true \
+                                --build-arg BASE_IMAGE="${pcrEndPoint}/${baseWasImage}:latest" \
+                                --build-arg COPY_TARGET="${oper}/target/${oper}.war" \
+                                --destination "${pcrEndPoint}/${oper}:${ciRefTag}" \
+                                --destination "${pcrEndPoint}/${oper}:latest"
+                                """
                         }
                     }
                 }
@@ -156,7 +177,7 @@ pipeline {
                     }
                     steps {
                         container('kubectl') {
-                            echo " done "
+                            sh "kubectl set image statefulset/${serv} ${serv}=${pcrEndPoint}/${serv}:${ciRefTag} -n was"
                         }
                     }
                 }
@@ -167,7 +188,12 @@ pipeline {
                     }
                     steps {
                         container('kubectl') {
-                            echo " done "
+                            script {
+                                if (! params.OPER) { // build per 1 image deploy for web
+                                    sh "kubectl set image statefulset/apache-app httpd=${pcrEndPoint}/${web}:${ciRefTag} -n web"
+                                }
+                            }
+                            sh "kubectl set image statefulset/${pfom} ${pfom}=${pcrEndPoint}/${pfom}:${ciRefTag} -n was"
                         }
                     }
                 }
@@ -177,17 +203,9 @@ pipeline {
                         expression { params.OPER }
                     }
                     steps {
-                        container('kubectl') {                             
-                            script {
-                                if (env.BRANCH_NAME == 'main') {
-                                    withKubeConfig([credentialsId: 'prod_cred']) {
-                                        //sh "kubectl set image StatefulSet/${oper} ${oper}=${pcr}/${oper}:${ciRefTag} -n ${targetNs} --record"
-                                    }
-                                } else {
-                                    echo " done "
-                                    //sh "kubectl set image StatefulSet/${oper} ${oper}=${pcr}/${oper}:${ciRefTag} -n was --record"
-                                }
-                            }
+                        container('kubectl') {
+                            sh "kubectl set image statefulset/apache-app httpd=${pcrEndPoint}/${web}:${ciRefTag} -n web"
+                            sh "kubectl set image statefulset/${oper} ${oper}=${pcrEndPoint}/${oper}:${ciRefTag} -n was"
                         }
                     }
                 }
