@@ -7,26 +7,26 @@ spec:
   securityContext:
     runAsUser: 0
   imagePullSecrets:
-    - name: dev-reg-secret
+    - name: prd-reg-secret
   serviceAccountName: jenkins-admin
   restartPolicy: Never
   containers:
     - name: maven
-      image: maven:3.8.2-openjdk-11
+      image: maven:3.8.2-openjdk-11-slim
       imagePullPolicy: IfNotPresent
       command:
         - sleep
       args:
         - 99m
       resources:
-        limits:
-          memory: 2Gi
-          cpu: 1000m
+        requests:
+          memory: 1Gi
+          cpu: 200m
       volumeMounts:
         - name: volume-mvn
           mountPath: /root/.m2/repository
     - name: kaniko-warmer
-      image: pqf1vv9m.private-ncr.gov-ntruss.com/custom-kaniko-warmer:1.0
+      image: avobxiry.private-ncr.gov-ntruss.com/custom-kaniko-warmer:1.0
       command:
         - sleep
       args:
@@ -82,7 +82,7 @@ spec:
       volumeMounts:
         - name: jenkins-kc
           mountPath: /root/.kube
-
+          readOnly: true
   volumes:
     - name: volume-mvn
       persistentVolumeClaim:
@@ -97,7 +97,7 @@ spec:
       projected:
         sources:
           - secret:
-              name: dev-reg-secret
+              name: prd-reg-secret
               items:
                 - key: .dockerconfigjson
                   path: config.json
