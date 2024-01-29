@@ -12,16 +12,16 @@ spec:
   restartPolicy: Never
   containers:
     - name: maven
-      image: maven:3.8.2-openjdk-11
+      image: maven:3.8.2-openjdk-11-slim
       imagePullPolicy: IfNotPresent
       command:
         - sleep
       args:
         - 99m
       resources:
-        limits:
-          memory: 2Gi
-          cpu: 1000m
+        requests:
+          memory: 1Gi
+          cpu: 200m
       volumeMounts:
         - name: volume-mvn
           mountPath: /root/.m2/repository
