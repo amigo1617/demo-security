@@ -25,7 +25,7 @@ import org.springframework.util.Assert;
  */
 public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationListener<AbstractSessionEvent> {
 
-    protected final Log logger = LogFactory.getLog(org.springframework.security.core.session.SessionRegistryImpl.class);
+    protected final Log logger = LogFactory.getLog(CustomSessionRegistryImpl.class);
 
     // <principal:Object,SessionIdSet>
     private final ConcurrentMap<String, Set<String>> principals;
@@ -38,8 +38,7 @@ public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationLi
         this.sessionIds = new ConcurrentHashMap<>();
     }
 
-    public CustomSessionRegistryImpl(ConcurrentMap<String, Set<String>> principals,
-                               Map<String, SessionInformation> sessionIds) {
+    public CustomSessionRegistryImpl(ConcurrentMap<String, Set<String>> principals, Map<String, SessionInformation> sessionIds) {
         this.principals = principals;
         this.sessionIds = sessionIds;
     }
@@ -80,8 +79,7 @@ public class CustomSessionRegistryImpl implements SessionRegistry, ApplicationLi
             SessionDestroyedEvent sessionDestroyedEvent = (SessionDestroyedEvent) event;
             String sessionId = sessionDestroyedEvent.getId();
             removeSessionInformation(sessionId);
-        }
-        else if (event instanceof SessionIdChangedEvent) {
+        } else if (event instanceof SessionIdChangedEvent) {
             SessionIdChangedEvent sessionIdChangedEvent = (SessionIdChangedEvent) event;
             String oldSessionId = sessionIdChangedEvent.getOldSessionId();
             if (this.sessionIds.containsKey(oldSessionId)) {
