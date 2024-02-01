@@ -26,6 +26,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -128,7 +130,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public AuthenticationProvider customAuthenticationProvider() {
-        return new CustomAuthenticationProvider(customUserDetailsService());
+        return new CustomAuthenticationProvider(customUserDetailsService(), passwordEncoder());
     }
 
     @Bean
@@ -146,12 +148,10 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         return new UrlAccessDecisionVoter();
     }
 
-    //@Bean
-    // BCryptPasswordEncoder는 Spring Security에서 제공하는 비밀번호 암호화 객체입니다.
-    // Service에서 비밀번호를 암호화할 수 있도록 Bean으로 등록합니다.
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     // AuthenticationManager 까지 컨피그 해야될시
 //    @Bean

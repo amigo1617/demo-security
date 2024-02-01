@@ -23,6 +23,7 @@ public class UrlAccessDecisionVoter implements AccessDecisionVoter<FilterInvocat
 
     @Override
     public int vote(Authentication authentication, FilterInvocation filterInvocation, Collection<ConfigAttribute> attributes) {
+        // 로그인 없이 secure url 접근의 경우 바로 ACCESS_DENIED
         if (authenticationTrustResolver.isAnonymous(authentication)) {
             System.out.println(String.format("UrlAccessDecisionVoter : anonymous - user    uri : %s ", filterInvocation.getRequestUrl()));
             System.out.println("need login ");

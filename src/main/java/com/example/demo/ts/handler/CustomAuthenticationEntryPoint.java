@@ -1,5 +1,7 @@
 package com.example.demo.ts.handler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -18,6 +20,8 @@ import java.io.IOException;
 //(Authentication -> AnonymousAuthenticationToken [Principal=anonymousUser, Credentials=[PROTECTED], Authenticated=true, Details=..., Granted Authorities=[ROLE_ANONYMOUS]])
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
+    private final Logger log = LoggerFactory.getLogger(CustomAuthenticationEntryPoint.class);
+
     @Autowired
     AccessDeniedHandler accessDeniedHandler;
 
@@ -25,7 +29,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         // caused by 미인증(익명인증 포함) secure url 접근시
-        System.out.println(" &&&&&&&  CustomAuthenticationEntryPoint  -  no authentications   need login" );
+        log.debug(" &&&&&&&  CustomAuthenticationEntryPoint  -  no authentications   need login" );
         response.sendRedirect("/login");
     }
 
