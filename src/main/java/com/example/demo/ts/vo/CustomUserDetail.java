@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class CustomUserDetail implements UserDetails {
 
@@ -59,4 +60,22 @@ public class CustomUserDetail implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    // when use security  .sessionRegistry(new SessionRegistryImpl())
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (! (object instanceof UserDetails)) {
+            return false;
+        }
+        return username == ((UserDetails) object).getUsername();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(username);
+    }
+    //////////////////////////////////////////////////////////////////////
 }

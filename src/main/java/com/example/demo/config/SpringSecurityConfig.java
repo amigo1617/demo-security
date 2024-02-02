@@ -2,12 +2,11 @@ package com.example.demo.config;
 
 import com.example.demo.ts.handler.*;
 import com.example.demo.ts.provider.CustomAuthenticationProvider;
-import com.example.demo.ts.resistry.CustomSessionRegistryImpl;
 import com.example.demo.ts.service.CustomUserDetailService;
 import com.example.demo.ts.voter.UrlAccessDecisionVoter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -21,9 +20,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -34,15 +30,10 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
-import org.springframework.security.web.session.SessionInformationExpiredEvent;
-import org.springframework.security.web.session.SessionInformationExpiredStrategy;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.ServletException;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 
@@ -83,7 +74,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .invalidSessionUrl("/login")
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(false)
-                .sessionRegistry(new CustomSessionRegistryImpl())
+                .sessionRegistry(new SessionRegistryImpl())
                 .expiredUrl("/login");
     }
 
@@ -98,10 +89,11 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
     }
 
-    @Bean
-    public HttpSessionEventPublisher httpSessionEventPublisher() {
-        return new HttpSessionEventPublisher();
+    @Bean // .sessionRegistry(new SessionRegistryImpl()) 이거에 대응...내장톰캣일시.. 아닌경우 ServletContextInitializer -> onStartup(ServletContext servletContext) - > servletContext.addListener(new HttpSessionEventPublisher()); 이렇게 등록해야함
+    public ServletListenerRegistrationBean httpSessionEventPublisher() {
+        return new ServletListenerRegistrationBean(new HttpSessionEventPublisher());
     }
+
 
     @Bean
     public LogoutSuccessHandler customLogoutSuccessHandler() {
