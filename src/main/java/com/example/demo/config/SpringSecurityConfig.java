@@ -48,6 +48,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/test", "/error", "/forbidden", "/api/**").permitAll() // relate WebExpressionVoter
                 .anyRequest().denyAll() // 위 permitall 만 WebExpressionVoter 이용, 나머지는 UrlAccessDecisionVoter 에서 인가 (쿼리해서 등등..)
+                // denyAll 대신 .authenticated 를 사용하면 WebExpressionVoter 는 로그인하면 모든url이 항상 true 반환하기에 UrlAccessDecisionVoter 가기전 access 되어버림
                 .accessDecisionManager(this.accessDecisionManager())
 
             .and()
