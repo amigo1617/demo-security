@@ -90,11 +90,10 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
         web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
     }
 
-    @Bean // .sessionRegistry(new SessionRegistryImpl()) 이거에 대응...내장톰캣일시.. 아닌경우 ServletContextInitializer -> onStartup(ServletContext servletContext) - > servletContext.addListener(new HttpSessionEventPublisher()); 이렇게 등록해야함
-    public ServletListenerRegistrationBean httpSessionEventPublisher() {
-        return new ServletListenerRegistrationBean(new HttpSessionEventPublisher());
+    @Bean
+    public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
+        return new ServletListenerRegistrationBean<>(new HttpSessionEventPublisher());
     }
-
 
     @Bean
     public LogoutSuccessHandler customLogoutSuccessHandler() {
