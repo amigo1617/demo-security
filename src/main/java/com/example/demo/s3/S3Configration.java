@@ -29,3 +29,17 @@ public class S3Configration {
                 .build();
     }
 }
+
+
+/*
+    @Bean
+    public AmazonS3 amazonS3Client(@Value("${S3_ACCESS_KEY:7313AC173F4C1C67592D}") String accessKey,
+                                   @Value("${S3_SECRET_KEY:762029C670EA64234969D2360EE56B53D32B7430}") String secretKey,
+                                   @Value("${S3_ENDPOINT:https://kr.object.gov-ncloudstorage.com}") String endpoint,
+                                   @Value("${S3_REGION:gov-standard}") String region) {
+        return AmazonS3ClientBuilder.standard()
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+                .build();
+    }
+*/
