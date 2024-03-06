@@ -1,0 +1,317 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2024-03-05T07:06:22Z"
+  generateName: uap-vuc-oper-
+  labels:
+    app: uap-vuc-oper
+    controller-revision-hash: uap-vuc-oper-66f99c75d8
+    statefulset.kubernetes.io/pod-name: uap-vuc-oper-0
+  name: uap-vuc-oper-0
+  namespace: was
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: uap-vuc-oper
+    uid: 87bac60b-6b31-4886-9f8e-79d813af3c19
+  resourceVersion: "3225056"
+  uid: 7f9e34cd-4a07-43df-8961-d486c91731ed
+spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - uap-vuc-oper
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  containers:
+  - command:
+    - /opt/wildfly-26/domains/was/jboot
+    env:
+    - name: JVM_OPTS
+      value: -Xms512m -Xmx2048m -XX:MaxMetaspaceSize=512m -Dsys=prod -Dapp.name=uap-vuc-oper
+        -Dapp.id=uap-vuc-oper -Dfile.encoding=UTF-8
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: status.podIP
+    - name: KUBERNETES_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: KUBERNETES_LABELS
+      value: app=uap-vuc-oper
+    - name: NODE_IP
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: status.hostIP
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: spec.nodeName
+    envFrom:
+    - configMapRef:
+        name: uap-vuc-oper-configmap
+    image: private-d0de783e-kr2-registry.container.gov-nhncloud.com/dev-k8s-registry/prd-was-base:latest
+    imagePullPolicy: Always
+    livenessProbe:
+      exec:
+        command:
+        - ls
+        - -ld
+        - /log/was
+      failureThreshold: 3
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 30
+    name: uap-vuc-oper
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+    - containerPort: 7600
+      protocol: TCP
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /
+        port: 8080
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 2
+      successThreshold: 1
+      timeoutSeconds: 10
+    resources:
+      limits:
+        cpu: 500m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 2Gi
+    securityContext:
+      runAsGroup: 1000
+      runAsNonRoot: true
+      runAsUser: 1000
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /log
+      name: data-dir
+    - mountPath: /opt/wildfly-26/domains/was/conf/standalone.xml
+      name: standalone-xml
+      subPath: standalone.xml
+    - mountPath: /opt/wildfly-26/domains/was/jboot
+      name: jboot
+      subPath: jboot
+    - mountPath: /opt/wildfly-26/domains/was/jdown
+      name: jdown
+      subPath: jdown
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-q9bqr
+      readOnly: true
+  - command:
+    - sh
+    - -c
+    - sleep 1000 && tail -f /var/log/was/gclog/GC_was.out
+    image: busybox:1.28
+    imagePullPolicy: IfNotPresent
+    name: gc-log-sidecar
+    resources:
+      limits:
+        cpu: 20m
+        memory: 64Mi
+      requests:
+        cpu: 20m
+        memory: 64Mi
+    securityContext:
+      runAsUser: 0
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/log
+      name: data-dir
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-q9bqr
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  hostname: uap-vuc-oper-0
+  imagePullSecrets:
+  - name: regcrd
+  initContainers:
+  - command:
+    - sh
+    - -c
+    - mkdir -p /var/log/was/gclog && chown -R 1000:1000 /var/log
+    image: busybox:1.28
+    imagePullPolicy: IfNotPresent
+    name: log-dir-change
+    resources:
+      limits:
+        cpu: 10m
+        memory: 64Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+    securityContext:
+      runAsUser: 0
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/log
+      name: data-dir
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-q9bqr
+      readOnly: true
+  nodeName: dev-k8s-clster-default-worker-node-1
+  preemptionPolicy: PreemptLowerPriority
+  priority: 200
+  priorityClassName: app-priority
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsUser: 1000
+  serviceAccount: default
+  serviceAccountName: default
+  subdomain: uap-vuc-oper-svc
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: data-dir
+    persistentVolumeClaim:
+      claimName: data-dir-uap-vuc-oper-0
+  - configMap:
+      defaultMode: 420
+      items:
+      - key: jboot
+        mode: 488
+        path: jboot
+      name: uap-vuc-oper-config
+    name: jboot
+  - configMap:
+      defaultMode: 420
+      items:
+      - key: jdown
+        mode: 488
+        path: jdown
+      name: uap-vuc-oper-config
+    name: jdown
+  - configMap:
+      defaultMode: 420
+      items:
+      - key: standalone.xml
+        mode: 448
+        path: standalone.xml
+      name: uap-vuc-oper-config
+    name: standalone-xml
+  - name: kube-api-access-q9bqr
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2024-03-05T07:06:31Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2024-03-05T07:06:22Z"
+    message: 'containers with unready status: [uap-vuc-oper]'
+    reason: ContainersNotReady
+    status: "False"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2024-03-05T07:06:22Z"
+    message: 'containers with unready status: [uap-vuc-oper]'
+    reason: ContainersNotReady
+    status: "False"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2024-03-05T07:06:22Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://b8e989c2a0200719275f08f5f507e4b069681ddfb88e27150c5cec4d6ce371ed
+    image: docker.io/library/busybox:1.28
+    imageID: docker.io/library/busybox@sha256:141c253bc4c3fd0a201d32dc1f493bcf3fff003b6df416dea4f41046e0f37d47
+    lastState: {}
+    name: gc-log-sidecar
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2024-03-05T07:06:31Z"
+  - containerID: containerd://15fe3747d20c4b5ae164c8680c423b4f4fe74acf8892d1f0bd3bd47a2280bb15
+    image: private-d0de783e-kr2-registry.container.gov-nhncloud.com/dev-k8s-registry/prd-was-base:latest
+    imageID: private-d0de783e-kr2-registry.container.gov-nhncloud.com/dev-k8s-registry/prd-was-base@sha256:a87f5462bc057c47a8d380a08320c9e3ed1466d3283173edf4d92052de2a9b22
+    lastState: {}
+    name: uap-vuc-oper
+    ready: false
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2024-03-05T07:06:31Z"
+  hostIP: 172.21.4.76
+  initContainerStatuses:
+  - containerID: containerd://f536ff579b066efa793c6e243bcf798337ef708cca86713f20447e7b2593a203
+    image: docker.io/library/busybox:1.28
+    imageID: docker.io/library/busybox@sha256:141c253bc4c3fd0a201d32dc1f493bcf3fff003b6df416dea4f41046e0f37d47
+    lastState: {}
+    name: log-dir-change
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: containerd://f536ff579b066efa793c6e243bcf798337ef708cca86713f20447e7b2593a203
+        exitCode: 0
+        finishedAt: "2024-03-05T07:06:30Z"
+        reason: Completed
+        startedAt: "2024-03-05T07:06:29Z"
+  phase: Running
+  podIP: 10.100.236.29
+  podIPs:
+  - ip: 10.100.236.29
+  qosClass: Guaranteed
+  startTime: "2024-03-05T07:06:22Z"
