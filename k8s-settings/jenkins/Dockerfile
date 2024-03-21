@@ -25,6 +25,10 @@ COPY ./${COPY_TARGET} .
 USER 0
 RUN chown -R 1000:1000 /opt/wildfly-26/standalone/deployments
 USER 1000
+ARG COPY_KSBIZ
+WORKDIR /
+RUN if [[ -n "$COPY_KSBIZ" ]] ; then COPY ./ksbiz ./ksbiz else echo Argument is $COPY_KSBIZ ; fi
+
 
 #Docker-web
 ARG BASE_IMAGE
