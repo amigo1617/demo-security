@@ -26,9 +26,8 @@ USER 0
 RUN chown -R 1000:1000 /opt/wildfly-26/standalone/deployments
 USER 1000
 WORKDIR /ksbiz
-RUN mkdir -p ./dummy
 ARG COPY_KSBIZ
-COPY ./${COPY_KSBIZ} .       ##조건에 따라 COPY 필요한경우 비어있는 dummy 디렉토리를 만들어 복사
+COPY ./${COPY_KSBIZ} .
 
 
 #Docker-web
